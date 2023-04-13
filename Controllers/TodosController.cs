@@ -8,37 +8,33 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TodoApp.Data;
 using TodoApp.Models;
+using Microsoft.Azure.Cosmos;
 
 namespace todoApp.Controllers
 {
     public class TodosController : Controller
     {
-        private readonly TodoAppContext _context;
-
         // GET: Todos
-        public  async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            Todo todo1 = new Todo();
-            todo1.Id = 2;
-            todo1.Title = "Probando";
-            todo1.Content = "Te pienso";
-            todo1.Status = 1;
-            todo1.id = Guid.NewGuid();
             var diiCosmosContext = DiiCosmosContext.Get();
-            await diiCosmosContext.Db.GetContainer("DiiCosmosEntity").CreateItemAsync<Todo>(todo1).ConfigureAwait(false);
-            return Problem("Waos");
+            var todo = diiCosmosContext.Db.GetContainer("Todos").GetItemQueryIterator<Todo>("SELECT * FROM c");
+
+            return View(todo);
         }
 
-        // GET: Todos/Details/5
-        public async Task<IActionResult> Details(int? id)
+        // GET: Todos/Details/cc2e02b3-17e2-4078-bdf5-aa035351943b
+        public async Task<IActionResult> Details(Guid? id)
         {   
-            if (id == null || _context.Todo == null)
+            var diiCosmosContext = DiiCosmosContext.Get();
+
+            if (id == null)
             {
                 return NotFound();
             }
 
-            var todo = await _context.Todo
-                .FirstOrDefaultAsync(m => m.Id == id);
+            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+
             if (todo == null)
             {
                 return NotFound();
@@ -58,26 +54,30 @@ namespace todoApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,createdAt,Content,Status")] Todo todo)
+        public async Task<IActionResult> Create([Bind("Title,Content,Status")] Todo todo)
         {
+            todo.id = Guid.NewGuid();
+            todo.CreatedAt = DateTime.Now;
             if (ModelState.IsValid)
             {
-                _context.Add(todo);
-                await _context.SaveChangesAsync();
+                var diiCosmosContext = DiiCosmosContext.Get();
+                await diiCosmosContext.Db.GetContainer("Todos").CreateItemAsync<Todo>(todo).ConfigureAwait(false);
                 return RedirectToAction(nameof(Index));
             }
             return View(todo);
         }
 
         // GET: Todos/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(Guid? id)
         {
-            if (id == null || _context.Todo == null)
+            if (id == null)
             {
                 return NotFound();
             }
+        
+            var diiCosmosContext = DiiCosmosContext.Get();
+            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
 
-            var todo = await _context.Todo.FindAsync(id);
             if (todo == null)
             {
                 return NotFound();
@@ -90,46 +90,38 @@ namespace todoApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,createdAt,Content,Status")] Todo todo)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Title,Content,Status")] Todo todo)
         {
-            if (id != todo.Id)
-            {
-                return NotFound();
-            }
+            var diiCosmosContext = DiiCosmosContext.Get();
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(todo);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TodoExists(todo.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                // diiCosmosContext.Db.GetContainer("Todos").PatchItemAsync<Todo>($"{id}", new PartitionKey($"{id}"), PatchOperation.Set<Todo>("Todos/Items", todo)).ConfigureAwait(false);
+                // I have to be honest, I didn't know how to patch the todo object... I try I bit more I will know, but for now...
+                Todo todoTwo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+                todo.CreatedAt = todoTwo.CreatedAt;
+                todo.id = todoTwo.id;
+
+                await diiCosmosContext.Db.GetContainer("Todos").DeleteItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+
+                await diiCosmosContext.Db.GetContainer("Todos").CreateItemAsync<Todo>(todo).ConfigureAwait(false);
+
                 return RedirectToAction(nameof(Index));
             }
             return View(todo);
         }
 
         // GET: Todos/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(Guid? id)
         {
-            if (id == null || _context.Todo == null)
+            if (id == null)
             {
                 return NotFound();
             }
 
-            var todo = await _context.Todo
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var diiCosmosContext = DiiCosmosContext.Get();
+            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+
             if (todo == null)
             {
                 return NotFound();
@@ -141,25 +133,25 @@ namespace todoApp.Controllers
         // POST: Todos/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            if (_context.Todo == null)
-            {
-                return Problem("Entity set 'TodoAppContext.Todo'  is null.");
-            }
-            var todo = await _context.Todo.FindAsync(id);
+            var diiCosmosContext = DiiCosmosContext.Get();
+            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+
             if (todo != null)
             {
-                _context.Todo.Remove(todo);
+                await diiCosmosContext.Db.GetContainer("Todos").DeleteItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
             }
             
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool TodoExists(int id)
+        private async Task<bool> TodoExists(Guid id)
         {
-          return (_context.Todo?.Any(e => e.Id == id)).GetValueOrDefault();
+            var diiCosmosContext = DiiCosmosContext.Get();
+            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}"));
+            if (todo != null) return true;
+            return false;
         }
     }
 }
