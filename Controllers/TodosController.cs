@@ -14,10 +14,15 @@ namespace todoApp.Controllers
 {
     public class TodosController : Controller
     {
+
+        DiiCosmosContext diiCosmosContext { get; set; }
+
+        public TodosController() {
+            diiCosmosContext = DiiCosmosContext.Get();
+        }
         // GET: Todos
         public IActionResult Index()
         {
-            var diiCosmosContext = DiiCosmosContext.Get();
             var todo = diiCosmosContext.Db.GetContainer("Todos").GetItemQueryIterator<Todo>("SELECT * FROM c");
 
             return View(todo);
@@ -26,8 +31,6 @@ namespace todoApp.Controllers
         // GET: Todos/Details/cc2e02b3-17e2-4078-bdf5-aa035351943b
         public async Task<IActionResult> Details(Guid? id)
         {   
-            var diiCosmosContext = DiiCosmosContext.Get();
-
             if (id == null)
             {
                 return NotFound();
@@ -60,7 +63,6 @@ namespace todoApp.Controllers
             todo.CreatedAt = DateTime.Now;
             if (ModelState.IsValid)
             {
-                var diiCosmosContext = DiiCosmosContext.Get();
                 await diiCosmosContext.Db.GetContainer("Todos").CreateItemAsync<Todo>(todo).ConfigureAwait(false);
                 return RedirectToAction(nameof(Index));
             }
@@ -75,7 +77,6 @@ namespace todoApp.Controllers
                 return NotFound();
             }
         
-            var diiCosmosContext = DiiCosmosContext.Get();
             Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
 
             if (todo == null)
@@ -92,8 +93,6 @@ namespace todoApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Title,Content,Status")] Todo todo)
         {
-            var diiCosmosContext = DiiCosmosContext.Get();
-
             if (ModelState.IsValid)
             {
                 // diiCosmosContext.Db.GetContainer("Todos").PatchItemAsync<Todo>($"{id}", new PartitionKey($"{id}"), PatchOperation.Set<Todo>("Todos/Items", todo)).ConfigureAwait(false);
@@ -119,7 +118,6 @@ namespace todoApp.Controllers
                 return NotFound();
             }
 
-            var diiCosmosContext = DiiCosmosContext.Get();
             Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
 
             if (todo == null)
@@ -135,7 +133,6 @@ namespace todoApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var diiCosmosContext = DiiCosmosContext.Get();
             Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
 
             if (todo != null)
@@ -148,7 +145,6 @@ namespace todoApp.Controllers
 
         private async Task<bool> TodoExists(Guid id)
         {
-            var diiCosmosContext = DiiCosmosContext.Get();
             Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}"));
             if (todo != null) return true;
             return false;
