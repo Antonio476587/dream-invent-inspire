@@ -31,7 +31,8 @@
 @while (Model.HasMoreResults)
 {
     @foreach (var item in await Model.ReadNextAsync()) {
-        <tr>
+        int status = item.Status;
+        <tr class="@(status == 0 ? "text-primary-emphasis" : "text-secondary")">
             <td>
                 @Html.DisplayFor(modelItem => item.Title)
             </td>
@@ -42,14 +43,13 @@
                 @Html.DisplayFor(modelItem => item.Content)
             </td>
             <td>
-                @{int status = item.Status;}
                 @if (status == 0)
                 {   
                     <div>Open</div>
                 }
                 else
                 {
-                    <div>Closed</div>
+                    <div>Done</div>
                 }
             </td>
             <td>
