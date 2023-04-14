@@ -27,5 +27,5 @@ th {
   border-right: 2px solid white;
 }
 th::first-letter {
-  color: aquamarine;
+  color: #0dcaf0;
 }
