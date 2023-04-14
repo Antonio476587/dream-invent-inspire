@@ -95,15 +95,19 @@ namespace todoApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                // diiCosmosContext.Db.GetContainer("Todos").PatchItemAsync<Todo>($"{id}", new PartitionKey($"{id}"), PatchOperation.Set<Todo>("Todos/Items", todo)).ConfigureAwait(false);
-                // I have to be honest, I didn't know how to patch the todo object... I try I bit more I will know, but for now...
-                Todo todoTwo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
-                todo.CreatedAt = todoTwo.CreatedAt;
-                todo.id = todoTwo.id;
+                var patchItemRequestOptions = new PatchItemRequestOptions
+                {
+                    EnableContentResponseOnWrite = false,
+                };
 
-                await diiCosmosContext.Db.GetContainer("Todos").DeleteItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+                var patchOperations = new List<PatchOperation>()
+                {
+                    PatchOperation.Set<string>("/Title", todo.Title?? "N/A"),
+                    PatchOperation.Set<string>("/Content", todo.Content?? " "),
+                    PatchOperation.Set<int>("/Status", todo.Status)
+                };
 
-                await diiCosmosContext.Db.GetContainer("Todos").CreateItemAsync<Todo>(todo).ConfigureAwait(false);
+                await diiCosmosContext.Db.GetContainer("Todos").PatchItemAsync<Todo>($"{id}", new PartitionKey($"{id}"), patchOperations, patchItemRequestOptions);
 
                 return RedirectToAction(nameof(Index));
             }
