@@ -9,14 +9,6 @@ namespace TodoApp.Adapters;
 
 public class TodoAdapter : DiiCosmosAdapter<Todo>, ITodoAdapter
 {
-    DiiCosmosContext diiCosmosContext { get; }
-    Container TodoContainer { get; }
-
-    public TodoAdapter() {
-        diiCosmosContext = DiiCosmosContext.Get();  
-        TodoContainer = diiCosmosContext.Db.GetContainer("Todos");
-    }
-
     public async Task<bool> CreateTodo(Todo todoToCreate)
     {
         Todo createdTodo = await base.CreateAsync(todoToCreate).ConfigureAwait(false);
