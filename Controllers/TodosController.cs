@@ -9,21 +9,22 @@ using Microsoft.EntityFrameworkCore;
 using TodoApp.Data;
 using TodoApp.Models;
 using Microsoft.Azure.Cosmos;
+using TodoApp.Adapters;
 
 namespace todoApp.Controllers
 {
     public class TodosController : Controller
     {
 
-        DiiCosmosContext diiCosmosContext { get; set; }
+        TodoAdapter todoAdapter { get; }
 
         public TodosController() {
-            diiCosmosContext = DiiCosmosContext.Get();
+            todoAdapter = new TodoAdapter();
         }
         // GET: Todos
         public IActionResult Index()
         {
-            var todo = diiCosmosContext.Db.GetContainer("Todos").GetItemQueryIterator<Todo>("SELECT * FROM c");
+            var todo = todoAdapter.GetTodoList();
 
             return View(todo);
         }
@@ -36,7 +37,7 @@ namespace todoApp.Controllers
                 return NotFound();
             }
 
-            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+            Todo todo = await todoAdapter.GetTodo((Guid) id);
 
             if (todo == null)
             {
@@ -61,10 +62,13 @@ namespace todoApp.Controllers
         {
             todo.id = Guid.NewGuid();
             todo.CreatedAt = DateTime.Now;
-            if (ModelState.IsValid)
+            todo.DataVersion = "1";
+
+            if (ModelState.IsValid && todo.Status >= 0 && todo.Status < 2)
             {
-                await diiCosmosContext.Db.GetContainer("Todos").CreateItemAsync<Todo>(todo).ConfigureAwait(false);
-                return RedirectToAction(nameof(Index));
+                if (await todoAdapter.CreateTodo(todo)) {
+                    return RedirectToAction(nameof(Index));
+                }
             }
             return View(todo);
         }
@@ -77,7 +81,7 @@ namespace todoApp.Controllers
                 return NotFound();
             }
         
-            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+            Todo todo = await todoAdapter.GetTodo((Guid) id);
 
             if (todo == null)
             {
@@ -95,21 +99,9 @@ namespace todoApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                var patchItemRequestOptions = new PatchItemRequestOptions
-                {
-                    EnableContentResponseOnWrite = false,
-                };
-
-                var patchOperations = new List<PatchOperation>()
-                {
-                    PatchOperation.Set<string>("/Title", todo.Title?? "N/A"),
-                    PatchOperation.Set<string>("/Content", todo.Content?? " "),
-                    PatchOperation.Set<int>("/Status", todo.Status)
-                };
-
-                await diiCosmosContext.Db.GetContainer("Todos").PatchItemAsync<Todo>($"{id}", new PartitionKey($"{id}"), patchOperations, patchItemRequestOptions);
-
-                return RedirectToAction(nameof(Index));
+                if (await todoAdapter.EditTodo(id, todo)) {
+                    return RedirectToAction(nameof(Index));
+                }
             }
             return View(todo);
         }
@@ -122,7 +114,7 @@ namespace todoApp.Controllers
                 return NotFound();
             }
 
-            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+            Todo todo = await todoAdapter.GetTodo((Guid) id);
 
             if (todo == null)
             {
@@ -137,21 +129,14 @@ namespace todoApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
 
-            if (todo != null)
+            if (await todoAdapter.ExistTodo(id))
             {
-                await diiCosmosContext.Db.GetContainer("Todos").DeleteItemAsync<Todo>($"{id}", new PartitionKey($"{id}")).ConfigureAwait(false);
+                todoAdapter.DeleteTodo(id);
             }
             
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task<bool> TodoExists(Guid id)
-        {
-            Todo todo = await diiCosmosContext.Db.GetContainer("Todos").ReadItemAsync<Todo>($"{id}", new PartitionKey($"{id}"));
-            if (todo != null) return true;
-            return false;
-        }
     }
 }
