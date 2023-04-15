@@ -22,22 +22,23 @@ namespace todoApp.Controllers
             todoAdapter = new TodoAdapter();
         }
         // GET: Todos
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var todo = todoAdapter.GetTodoList();
+            var todo = await todoAdapter.GetTodoList();
 
             return View(todo);
         }
 
         // GET: Todos/Details/cc2e02b3-17e2-4078-bdf5-aa035351943b
-        public async Task<IActionResult> Details(Guid? id)
+        public async Task<IActionResult> Details(string? id)
         {   
             if (id == null)
             {
                 return NotFound();
             }
 
-            Todo todo = await todoAdapter.GetTodo((Guid) id);
+            // Todo todo = await todoAdapter.GetTodo(id.ToString());
+            Todo todo = await todoAdapter.GetTodo(id);
 
             if (todo == null)
             {
@@ -60,7 +61,7 @@ namespace todoApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Title,Content,Status")] Todo todo)
         {
-            todo.id = Guid.NewGuid();
+            todo.id = Guid.NewGuid().ToString();
             todo.CreatedAt = DateTime.Now;
             todo.DataVersion = "1";
 
@@ -74,14 +75,14 @@ namespace todoApp.Controllers
         }
 
         // GET: Todos/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        public async Task<IActionResult> Edit(string? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
         
-            Todo todo = await todoAdapter.GetTodo((Guid) id);
+            Todo todo = await todoAdapter.GetTodo(id);
 
             if (todo == null)
             {
@@ -95,10 +96,11 @@ namespace todoApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Title,Content,Status")] Todo todo)
+        public async Task<IActionResult> Edit(string id, [Bind("Title,Content,Status")] Todo todo)
         {
             if (ModelState.IsValid)
             {
+                todo.id = id;
                 if (await todoAdapter.EditTodo(id, todo)) {
                     return RedirectToAction(nameof(Index));
                 }
@@ -107,14 +109,14 @@ namespace todoApp.Controllers
         }
 
         // GET: Todos/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public async Task<IActionResult> Delete(string? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            Todo todo = await todoAdapter.GetTodo((Guid) id);
+            Todo todo = await todoAdapter.GetTodo(id);
 
             if (todo == null)
             {
@@ -127,7 +129,7 @@ namespace todoApp.Controllers
         // POST: Todos/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public async Task<IActionResult> DeleteConfirmed(string id)
         {
 
             if (await todoAdapter.ExistTodo(id))

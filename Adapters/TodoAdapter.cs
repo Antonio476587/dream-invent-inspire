@@ -1,4 +1,6 @@
+using dii.storage;
 using dii.storage.cosmos;
+using dii.storage.cosmos.Models;
 using Microsoft.Azure.Cosmos;
 using TodoApp.Models;
 using TodoApp.Models.Interfaces;
@@ -11,57 +13,58 @@ public class TodoAdapter : DiiCosmosAdapter<Todo>, ITodoAdapter
     Container TodoContainer { get; }
 
     public TodoAdapter() {
-        diiCosmosContext = DiiCosmosContext.Get();
+        diiCosmosContext = DiiCosmosContext.Get();  
         TodoContainer = diiCosmosContext.Db.GetContainer("Todos");
     }
 
     public async Task<bool> CreateTodo(Todo todoToCreate)
     {
-        Todo createdTodo = await TodoContainer.CreateItemAsync<Todo>(todoToCreate).ConfigureAwait(false);
+        Todo createdTodo = await base.CreateAsync(todoToCreate).ConfigureAwait(false);
 
         if (createdTodo.id == todoToCreate.id) return true;
         return false;
     }
 
-    public async void DeleteTodo(Guid todoId)
+    public async void DeleteTodo(string todoId)
     {
-        await TodoContainer.DeleteItemAsync<Todo>($"{todoId}", new PartitionKey($"{todoId}")).ConfigureAwait(false);
+        await base.DeleteAsync(todoId, todoId).ConfigureAwait(false);
     }
 
-    public async Task<bool> ExistTodo(Guid todoId)
+    public async Task<bool> ExistTodo(string todoId)
     {
-        Todo todo = await TodoContainer.ReadItemAsync<Todo>($"{todoId}", new PartitionKey($"{todoId}")).ConfigureAwait(false);
+        Todo todo = await base.GetAsync(todoId, todoId).ConfigureAwait(false);
         if (todo != null) return true;
         return false;
     }
 
-    public async Task<Todo> GetTodo(Guid todoId)
+    public async Task<Todo> GetTodo(string todoId)
     {
-        Todo todo = await TodoContainer.ReadItemAsync<Todo>($"{todoId}", new PartitionKey($"{todoId}")).ConfigureAwait(false);
-        return todo;
+        return await base.GetAsync(todoId, todoId).ConfigureAwait(false);
     }
 
-    public FeedIterator<Todo> GetTodoList()
+    public async Task<IEnumerable<Todo>> GetTodoList()
     {
-        return TodoContainer.GetItemQueryIterator<Todo>("SELECT * FROM c");
+        PagedList<Todo> pagedList = await base.GetPagedAsync("SELECT * FROM c");
+
+        return pagedList.AsEnumerable();
     }
 
-    public async Task<bool> EditTodo(Guid todoId, Todo newTodo)
+    public async Task<bool> EditTodo(string todoId, Todo newTodo)
     {
         var patchItemRequestOptions = new PatchItemRequestOptions
         {
-            EnableContentResponseOnWrite = false,
+            EnableContentResponseOnWrite = true,
         };
 
         var patchOperations = new List<PatchOperation>()
         {
             PatchOperation.Set<string>("/Title", newTodo.Title?? "N/A"),
             PatchOperation.Set<string>("/Content", newTodo.Content?? " "),
-            PatchOperation.Set<int>("/Status", newTodo.Status)
+            PatchOperation.Set<int>("/Status", newTodo.Status),
         };
 
-        Todo createdTodo = await TodoContainer.PatchItemAsync<Todo>($"{todoId}", new PartitionKey($"{todoId}"), patchOperations, patchItemRequestOptions).ConfigureAwait(false);
-
+        Todo createdTodo = await base.PatchAsync(todoId, todoId, patchOperations, patchItemRequestOptions).ConfigureAwait(false);
+        
         if (createdTodo.id == newTodo.id) return true;
         return false;
 

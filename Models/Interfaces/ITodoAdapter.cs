@@ -4,10 +4,10 @@ namespace TodoApp.Models.Interfaces;
 
 public interface ITodoAdapter
 {
-    FeedIterator<Todo> GetTodoList();
-    Task<Todo> GetTodo(Guid todoId);
+    Task<IEnumerable<Todo>> GetTodoList();
+    Task<Todo> GetTodo(string todoId);
     Task<bool> CreateTodo(Todo todoToCreate);
-    Task<bool> EditTodo(Guid todoId, Todo newTodo);
-    void DeleteTodo(Guid todoId);
-    Task<bool> ExistTodo(Guid todoId);
+    Task<bool> EditTodo(string todoId, Todo newTodo);
+    void DeleteTodo(string todoId);
+    Task<bool> ExistTodo(string todoId);
 }

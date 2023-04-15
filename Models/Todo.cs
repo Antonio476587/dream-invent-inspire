@@ -13,16 +13,17 @@ public class Todo : IDiiEntity
 	/// </summary>
     [PartitionKey(typeof(PartitionKey))]
     [Id]
-    public System.Guid id { get; set; }	
+    public string id { get; set; } = Guid.NewGuid().ToString();
     /// <summary>
 	/// The Todo Title
 	/// </summary>
+	[Searchable("Tittle")]
     public string? Title { get; set; }
     /// <summary>
 	/// When the Todo has been created
 	/// </summary>
     [DataType(System.ComponentModel.DataAnnotations.DataType.Date)]
-	[Searchable("address")]
+	[Searchable("CreatedAt")]
     public DateTime CreatedAt { get; set; }
     [Compress(0)]	
     /// <summary>
@@ -32,7 +33,7 @@ public class Todo : IDiiEntity
     /// <summary>
 	/// The Todo Status
 	/// </summary>
-    [Searchable("status")]
+    [Searchable("Status")]
     public int Status { get; set; }
 		
     [IgnoreMember]
