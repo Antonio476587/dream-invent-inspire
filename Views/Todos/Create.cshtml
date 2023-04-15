@@ -12,22 +12,22 @@
     <div class="col-md-6 mx-auto">
         <form asp-action="Create" class="d-flex flex-column gap-3">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
+            <div class="form-floating form-group">
+                <input asp-for="Title" class="form-control" id="title" />
+                <label asp-for="Title" class="control-label" for="title"></label>
                 <span asp-validation-for="Title" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="Content" class="control-label"></label>
-                <input asp-for="Content" class="form-control" />
+            <div class="form-floating form-group">
+                <textarea asp-for="Content" class="form-control" id="content"></textarea>
+                <label asp-for="Content" class="control-label" for="content"></label>
                 <span asp-validation-for="Content" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="Status" class="control-label"></label>
-                <select asp-for="Status" class="form-control">
+            <div class="form-floating form-group">
+                <select asp-for="Status" class="form-control" id="status">
                     <option value="0" selected aria-selected="true">Open</option>
                     <option value="1">Done</option>
                 </select>
+                <label asp-for="Status" class="control-label" for="status"></label>
                 <span asp-validation-for="Status" class="text-danger"></span>
             </div>
             <div class="form-group">
