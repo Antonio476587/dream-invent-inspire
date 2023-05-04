@@ -2,17 +2,12 @@
 // for details on configuring this project to bundle and minify static web assets.
 
 // Write your JavaScript code.
+
+// BarbaJS code
 barba.init({
   transitions: [{
     name: 'opacity-transition',
-    // leave(data) {
-    //   console.log(data);
-    //   return gsap.to(data.current.container, {
-    //     opacity: 0,
-    //   });
-    // },
     leave(data) {
-      console.log(data);
       return gsap.to(data.current.container, {
         opacity: 0,
         position: "absolute",
@@ -28,3 +23,16 @@ barba.init({
     }
   }]
 });
+
+// SignalR code
+const connection = new signalR.HubConnectionBuilder().withUrl("/todohub").build();
+
+window.addEventListener("submit", (e) => {
+  connection.invoke("SendData");
+});  
+
+connection.on("ReceiveData", (boolea) => {
+  location.reload();
+});
+
+connection.start().then(() => console.log("Conected"));

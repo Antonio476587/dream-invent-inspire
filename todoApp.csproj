@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="dii.storage" Version="1.2.4" />
     <PackageReference Include="dii.storage.cosmos" Version="1.2.4" />
+    <PackageReference Include="Microsoft.AspNet.SignalR" Version="2.4.3" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.32.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

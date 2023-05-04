@@ -3,6 +3,7 @@ using dii.storage.cosmos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TodoApp.Data;
+using TodoApp.Hubs;
 
 public class Program 
 {
@@ -22,6 +23,8 @@ public class Program
         // Add services to the container.
         builder.Services.AddControllersWithViews();
 
+        builder.Services.AddSignalR();
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -38,6 +41,11 @@ public class Program
         app.UseRouting();
 
         app.UseAuthorization();
+
+        app.UseEndpoints(endpoints => 
+        {
+            endpoints.MapHub<TodoHub>("/todohub");
+        });
 
         app.MapControllerRoute(
             name: "default",
