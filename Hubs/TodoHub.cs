@@ -4,8 +4,8 @@ namespace TodoApp.Hubs
 {
     public class TodoHub : Hub
     {
-        public async Task SendData() {
-            await Clients.Others.SendAsync("ReceiveData", true);
+        public async Task SendSignal() {
+            await Clients.Others.SendAsync("ReloadPage");
         }
     }
 }

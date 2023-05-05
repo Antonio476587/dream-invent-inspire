@@ -28,10 +28,10 @@ barba.init({
 const connection = new signalR.HubConnectionBuilder().withUrl("/todohub").build();
 
 window.addEventListener("submit", (e) => {
-  connection.invoke("SendData");
+  connection.invoke("SendSignal");
 });  
 
-connection.on("ReceiveData", (boolea) => {
+connection.on("ReloadPage", () => {
   location.reload();
 });
 
